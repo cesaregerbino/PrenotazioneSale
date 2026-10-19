@@ -20,6 +20,9 @@
   (nessun ORM), pytest, tzdata.
 - Non aggiungere dipendenze senza approvazione.
 - Documenti e messaggi in italiano; codice e identificatori in inglese.
+- Esegui sempre i comandi Python con l'interprete dell'ambiente virtuale:
+  .venv\Scripts\python -m pip ... e .venv\Scripts\python -m pytest.
+
 
 ## Regole tecniche
 - Le regole di business sono funzioni pure in app/rules/ e ricevono `now`
