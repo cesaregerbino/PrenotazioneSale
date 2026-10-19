@@ -43,4 +43,6 @@
 - Mai segreti nel codice o nei file versionati.
 - Non eseguire git push né comandi distruttivi (cancellazioni, git reset
   --hard, push --force) senza chiedere.
+- Il .gitignore si modifica solo aggiungendo righe: non rimuovere né
+  sostituire voci esistenti senza una richiesta esplicita.
   
