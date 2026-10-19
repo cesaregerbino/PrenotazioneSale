@@ -272,7 +272,8 @@ class TestTransactionPostConditions:
         # Dopo l'eccezione, conn_write NON deve essere in transazione
         assert conn_write.in_transaction is False
 
-        # Chiudiamo la scrittura tenuta aperta
+        # Chiudiamo le connessioni
+        conn_write.close()
         conn_held.execute("ROLLBACK")
         conn_held.close()
 
@@ -327,7 +328,8 @@ class TestTransactionPostConditions:
         # Dopo l'eccezione, conn_write NON deve essere in transazione
         assert conn_write.in_transaction is False
 
-        # Chiudiamo la lettura con COMMIT (non ROLLBACK, per simulare un commit normale)
+        # Chiudiamo conn_write e poi la lettura con COMMIT
+        conn_write.close()
         conn_read.execute("COMMIT")
         conn_read.close()
 

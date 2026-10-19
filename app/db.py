@@ -88,8 +88,6 @@ def transaction(conn: sqlite3.Connection) -> Generator[None, None, None]:
     except Exception as exc:
         if conn.in_transaction:
             conn.execute("ROLLBACK")
-        if isinstance(exc, ServiceBusyError):
-            raise
         if isinstance(exc, sqlite3.OperationalError) and "database is locked" in str(exc):
             raise ServiceBusyError() from exc
         raise
