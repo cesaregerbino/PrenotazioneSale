@@ -173,6 +173,22 @@ Scenario: Prenotazione di fascia già passata oggi
   Dato che oggi è lunedì 19 ottobre 2026 e sono le 11:00
   Quando il dipendente richiede di prenotare la fascia 09:00-09:30 di oggi
   Allora la prenotazione viene rifiutata con un errore che indica che la fascia è già passata
+
+Scenario: Prenotazione che inizia all'istante corrente
+  Dato che oggi è lunedì 19 ottobre 2026 e sono le 11:00
+  E la fascia 11:00-11:30 del 19 ottobre 2026 è disponibile
+  Quando il dipendente richiede di prenotare la fascia 11:00-11:30
+  Allora la prenotazione viene rifiutata con un errore che indica che la fascia è già passata (DATE_IN_PAST)
+
+Scenario: Prenotazione con orario contenente secondi non nulli
+  Dato che oggi è lunedì 19 ottobre 2026
+  Quando il dipendente richiede di prenotare la fascia 10:00:30-10:30:30
+  Allora la prenotazione viene rifiutata con un errore che indica che il formato dell'orario non è valido (TIME_SLOT_INVALID)
+
+Scenario: Prenotazione con fine uguale all'inizio
+  Dato che oggi è lunedì 19 ottobre 2026
+  Quando il dipendente richiede di prenotare la fascia 10:00-10:00
+  Allora la prenotazione viene rifiutata con un errore che indica che l'orario di fine deve essere successivo all'orario di inizio (TIME_SLOT_INVALID)
 ```
 
 ---

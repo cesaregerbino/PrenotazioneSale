@@ -48,7 +48,10 @@ def client(conn: sqlite3.Connection, db_path: str):
         )
         cs.row_factory = sqlite3.Row
         cs.execute("PRAGMA foreign_keys = ON")
-        yield cs
+        try:
+            yield cs
+        finally:
+            cs.close()
 
     app.dependency_overrides[get_now] = lambda: FIXED_NOW
     app.dependency_overrides[get_db] = _thread_safe_get_db
@@ -263,6 +266,116 @@ class TestCreateBooking:
         assert "rossi" not in error_msg.lower()
         assert "target" not in error_msg.lower()
         assert "azienda" not in error_msg.lower()
+
+    def test_partial_overlap_409(self, client: TestClient, conn: sqlite3.Connection) -> None:
+        """Esistente 10:00-11:00, nuova 10:30-11:30 -> 409 TIME_SLOT_OCCUPIED."""
+        conn.execute(
+            "INSERT INTO bookings (room_id, user_email, date, start_time, end_time, participants, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (1, "mario.rossi@azienda.it", "2026-10-21", "10:00", "11:00", 5, FIXED_NOW.isoformat()),
+        )
+        conn.commit()
+
+        body = {
+            "room_id": 1,
+            "date": "2026-10-21",
+            "start_time": "10:30",
+            "end_time": "11:30",
+            "participants": 3,
+        }
+        resp = client.post(
+            "/bookings",
+            json=body,
+            headers={"X-User-Email": "mario.rossi@azienda.it"},
+        )
+        assert resp.status_code == 409
+        assert resp.json()["error"]["code"] == "TIME_SLOT_OCCUPIED"
+
+    def test_adjacent_201(self, client: TestClient, conn: sqlite3.Connection) -> None:
+        """Esistente 10:00-11:00, nuova 11:00-12:00 -> 201."""
+        conn.execute(
+            "INSERT INTO bookings (room_id, user_email, date, start_time, end_time, participants, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (1, "mario.rossi@azienda.it", "2026-10-21", "10:00", "11:00", 5, FIXED_NOW.isoformat()),
+        )
+        conn.commit()
+
+        body = {
+            "room_id": 1,
+            "date": "2026-10-21",
+            "start_time": "11:00",
+            "end_time": "12:00",
+            "participants": 3,
+        }
+        resp = client.post(
+            "/bookings",
+            json=body,
+            headers={"X-User-Email": "mario.rossi@azienda.it"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["start_time"] == "11:00"
+        assert data["end_time"] == "12:00"
+        assert data["participants"] == 3
+
+    def test_after_409_single_booking(self, client: TestClient, conn: sqlite3.Connection) -> None:
+        """Dopo un 409, nel database esiste ancora una sola prenotazione."""
+        conn.execute(
+            "INSERT INTO bookings (room_id, user_email, date, start_time, end_time, participants, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (1, "mario.rossi@azienda.it", "2026-10-21", "10:00", "11:00", 5, FIXED_NOW.isoformat()),
+        )
+        conn.commit()
+
+        # Prima richiesta -> 409 (sovrapposizione)
+        body1 = {
+            "room_id": 1,
+            "date": "2026-10-21",
+            "start_time": "10:30",
+            "end_time": "11:30",
+            "participants": 3,
+        }
+        resp1 = client.post(
+            "/bookings",
+            json=body1,
+            headers={"X-User-Email": "mario.rossi@azienda.it"},
+        )
+        assert resp1.status_code == 409
+
+        # Verifica: nel DB esiste esattamente 1 prenotazione per questa fascia
+        count = conn.execute(
+            "SELECT COUNT(*) FROM bookings WHERE room_id=? AND date=? AND start_time=? AND end_time=?",
+            (1, "2026-10-21", "10:00", "11:00"),
+        ).fetchone()[0]
+        assert count == 1
+
+    def test_after_201_booking_saved(self, client: TestClient, conn: sqlite3.Connection) -> None:
+        """Dopo un 201, la prenotazione è effettivamente salvata nel database."""
+        body = {
+            "room_id": 1,
+            "date": "2026-10-21",
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "participants": 5,
+        }
+        resp = client.post(
+            "/bookings",
+            json=body,
+            headers={"X-User-Email": "mario.rossi@azienda.it"},
+        )
+        assert resp.status_code == 201
+
+        # Verifica: nel DB esiste la prenotazione
+        row = conn.execute(
+            "SELECT room_id, date, start_time, end_time, participants FROM bookings WHERE id=?",
+            (resp.json()["id"],),
+        ).fetchone()
+        assert row is not None
+        assert row["room_id"] == 1
+        assert row["date"] == "2026-10-21"
+        assert row["start_time"] == "10:00"
+        assert row["end_time"] == "11:00"
+        assert row["participants"] == 5
 
     def test_openapi_schema_200(self) -> None:
         """GET /openapi.json deve restituire 200 con uno schema valido."""
