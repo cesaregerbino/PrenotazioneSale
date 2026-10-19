@@ -331,6 +331,7 @@ Anche in un singolo processo Python, un server web ASGI (Uvicorn) esegue gli end
 - Per un progetto didattico con carico basso, questo è più che sufficiente.
 - SQLite è un database file-based: il lock write blocca tutte le operazioni di scrittura sul file, non solo quelle sulla stessa sala. Se il sistema cresce e ci sono molte prenotazioni concorrenti, le richieste si bloccano a vicenda.
 - Il timeout di 5 secondi è il default del modulo `sqlite3` di Python. Se il sistema dovesse gestire più prenotazioni concorrenti, potrebbe essere necessario aumentarlo o ridurre il timeout per evitare attese prolungate.
+- la capienza è letta fuori dalla transazione; una riduzione di capienza concorrente non viene rilevata. Accettato per l'MVP.
 
 ---
 

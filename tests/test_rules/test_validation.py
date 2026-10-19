@@ -71,6 +71,11 @@ class TestValidateTimeAlignment:
             validate_time_alignment(time(10, 15), time(10, 45))
         assert exc.value.code == "TIME_SLOT_INVALID"
 
+    def test_with_seconds_raises(self) -> None:
+        with pytest.raises(BookingRuleError) as exc:
+            validate_time_alignment(time(10, 0, 30), time(10, 30))
+        assert exc.value.code == "TIME_SLOT_INVALID"
+
 
 # ------------------------------------------------------------------
 # validate_duration

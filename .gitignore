@@ -26,7 +26,7 @@ wheels/
 # Pytest
 .pytest_cache/
 coverage/
-*.html
+htmlcov/
 
 # Virtual environments
 .venv/
@@ -35,3 +35,7 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# Dati e segreti locali
+*.db
+.env

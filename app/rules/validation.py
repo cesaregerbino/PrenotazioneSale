@@ -35,9 +35,12 @@ def validate_end_after_start(start_time: time, end_time: time) -> None:
 
 
 def validate_time_alignment(start_time: time, end_time: time) -> None:
-    """Verifica che inizio e fine siano allineati alla mezz'ora."""
+    """Verifica che inizio e fine siano allineati alla mezz'ora.
+
+    Rifiuta anche orari con secondi o microsecondi diversi da zero.
+    """
     for t, label in [(start_time, "inizio"), (end_time, "fine")]:
-        if t.minute not in (0, 30):
+        if t.second != 0 or t.microsecond != 0 or t.minute not in (0, 30):
             raise BookingRuleError(
                 "TIME_SLOT_INVALID",
                 f"L'orario di {label} ({t.strftime('%H:%M')}) non è allineato a fasce di 30 minuti",
