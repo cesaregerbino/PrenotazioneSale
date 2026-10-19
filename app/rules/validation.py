@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timedelta
 
 from zoneinfo import ZoneInfo
 
-from app.rules.exceptions import BookingRuleError
+from app.errors import BookingRuleError
 
 ROME = ZoneInfo("Europe/Rome")
 

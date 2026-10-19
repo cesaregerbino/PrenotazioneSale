@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from app.rules.exceptions import BookingRuleError
+from app.errors import BookingRuleError
 from app.rules.validation import (
     validate_business_hours,
     validate_booking,
